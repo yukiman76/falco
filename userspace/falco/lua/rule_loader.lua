@@ -186,8 +186,8 @@ function load_rules(filename, rules_mgr)
 
 	    install_filter(filter_ast.filter.value)
 
-	    -- Pass the filter, event type, and rule id back up
-	    falco_rules.add_filter(rules_mgr, evttypes, state.n_rules)
+	    -- Pass the filter and event types back up
+	    falco_rules.add_filter(rules_mgr, evttypes)
 
 	    -- Rule ASTs are merged together into one big AST, with "OR" between each
 	    -- rule.

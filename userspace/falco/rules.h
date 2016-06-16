@@ -20,7 +20,7 @@ class falco_rules
  private:
 	void load_compiler(string lua_main_filename);
 
-	void add_filter(list<uint16_t> &evttypes, uint32_t rule_id);
+	void add_filter(list<uint16_t> &evttypes);
 
 	lua_parser* m_lua_parser;
 	sinsp* m_inspector;
