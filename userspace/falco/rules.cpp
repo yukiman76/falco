@@ -88,42 +88,65 @@ void falco_rules::load_compiler(string lua_main_filename)
 	}
 }
 
+static void add_to_evts_table(map<string,string> &evts, const char *name, uint32_t id)
+{
+	auto it = evts.find(name);
+
+	if (it == evts.end()) {
+		evts[name] = to_string(id);
+	} else {
+		string cur = it->second;
+		cur += " ";
+		cur += to_string(id);
+		evts[name] = cur;
+	}
+}
+
 void falco_rules::load_rules(string rules_filename)
 {
 	lua_getglobal(m_ls, m_lua_load_rules.c_str());
 	if(lua_isfunction(m_ls, -1))
 	{
-		// Create a table containing all events, so they can
-		// be mapped to event ids.
+		// Create tables containing containing all
+		// enter/exit events, so they can be mapped to event
+		// ids.
 		sinsp_evttables* einfo = m_inspector->get_event_info_tables();
 		const struct ppm_event_info* etable = einfo->m_event_info;
 		const struct ppm_syscall_desc* stable = einfo->m_syscall_info_table;
 
-		map<string,string> events_by_name;
+		map<string,string> enter_events_by_name;
+		map<string,string> exit_events_by_name;
 		for(uint32_t j = 0; j < PPM_EVENT_MAX; j++)
 		{
-			auto it = events_by_name.find(etable[j].name);
-
-			if (it == events_by_name.end()) {
-				events_by_name[etable[j].name] = to_string(j);
+			if (PPME_IS_ENTER(j))
+			{
+				add_to_evts_table(enter_events_by_name, etable[j].name, j);
 			} else {
-				string cur = it->second;
-				cur += " ";
-				cur += to_string(j);
-				events_by_name[etable[j].name] = cur;
+				add_to_evts_table(exit_events_by_name, etable[j].name, j);
 			}
 		}
 
 		lua_newtable(m_ls);
 
-		for( auto kv : events_by_name)
+		for( auto kv : enter_events_by_name)
 		{
 			lua_pushstring(m_ls, kv.first.c_str());
 			lua_pushstring(m_ls, kv.second.c_str());
 			lua_settable(m_ls, -3);
 		}
 
-		lua_setglobal(m_ls, m_lua_events.c_str());
+		lua_setglobal(m_ls, m_lua_enter_events.c_str());
+
+		lua_newtable(m_ls);
+
+		for( auto kv : exit_events_by_name)
+		{
+			lua_pushstring(m_ls, kv.first.c_str());
+			lua_pushstring(m_ls, kv.second.c_str());
+			lua_settable(m_ls, -3);
+		}
+
+		lua_setglobal(m_ls, m_lua_exit_events.c_str());
 
 		// Create a table containing the syscalls/events that
 		// are ignored by the kernel module. load_rules will

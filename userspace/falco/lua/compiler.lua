@@ -156,10 +156,15 @@ function check_for_ignored_syscalls_events(ast, filter_type, source)
    parser.traverse_ast(ast, "BinaryRelOp", cb)
 end
 
+-- XXX/mstemm How to handle not?
+-- XXX/mstemm How to handle specifying both directions in a condition? Currently just rejecting.
 function get_evttypes(ast, source)
 
-   local evttypes = {}
-   local found_event = false
+   local enter_evttypes = {}
+   local exit_evttypes = {}
+   local both_evttypes = {}
+   local enter_direction = false
+   local exit_direction = false
 
    function cb(node)
       if node.left.type == "FieldName" and node.left.value == "evt.type" then
@@ -169,8 +174,13 @@ function get_evttypes(ast, source)
 		  if node.left.value == "evt.type" then
 		     found_event = true
 
-		     for id in string.gmatch(events[v.value], "%S+") do
-			evttypes[id] = 1
+		     for id in string.gmatch(enter_events[v.value], "%S+") do
+			enter_evttypes[id] = 1
+			both_evttypes[id] = 1
+		     end
+		     for id in string.gmatch(exit_events[v.value], "%S+") do
+			exit_evttypes[id] = 1
+			both_evttypes[id] = 1
 		     end
 		  end
 	       end
@@ -179,11 +189,23 @@ function get_evttypes(ast, source)
 	    if node.right.type == "BareString" then
 	       if node.left.value == "evt.type" then
 		  found_event = true
-		  for id in string.gmatch(events[node.right.value], "%S+") do
-		     evttypes[id] = 1
+		  for id in string.gmatch(enter_events[node.right.value], "%S+") do
+		     enter_evttypes[id] = 1
+		     both_evttypes[id] = 1
+		  end
+		  for id in string.gmatch(exit_events[node.right.value], "%S+") do
+		     exit_evttypes[id] = 1
+		     both_evttypes[id] = 1
 		  end
 	       end
 	    end
+	 end
+      end
+      if node.left.type == "FieldName" and node.left.value == "evt.dir" then
+	 if node.right.value == ">" then
+	    enter_direction = true
+	 else
+	    exit_direction = true
 	 end
       end
    end
@@ -194,7 +216,15 @@ function get_evttypes(ast, source)
       error("Rule must contain an evt.type condition: "..source)
    end
 
-   return evttypes
+   -- The event types to return is either the enter events, exit events, or both
+   if ((enter_direction and exit_direction) or
+      (not enter_direction and not exit_direction)) then
+      return both_evttypes
+   elseif enter_direction then
+      return enter_evttypes
+   else
+      return exit_evttypes
+   end
 end
 
 function compiler.compile_macro(line, list_defs)
