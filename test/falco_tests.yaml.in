@@ -3,6 +3,12 @@ trace_files: !mux
     detect: False
     trace_file: trace_files/empty.scap
     rules_warning: False
+    run_method: !mux
+      source_tree:
+        run_from_source: true
+      package:
+        install_package: true
+        run_from_source: false
 
   test_warnings:
     detect: False

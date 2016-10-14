@@ -8,6 +8,7 @@ import sets
 from avocado import Test
 from avocado.utils import process
 from avocado.utils import linux_modules
+from avocado.utils import distro
 
 class FalcoTest(Test):
 
@@ -99,6 +100,28 @@ class FalcoTest(Test):
                     output['line'] = item2[1]
                     outputs.append(output)
             self.outputs = outputs
+
+        self.should_install_package = self.params.get('install_package', '*', default=False)
+
+        if self.should_install_package:
+            self.install_package()
+
+    def install_package(self):
+        # Determine which package we should install
+        linux_dist = distro.detect()
+
+        self.log.info("Detected Linux Distribution={}".format(linux_dist))
+
+        if linux_dist.name == "Ubuntu" or linux_dist.name == "Debian":
+            install_cmd = "DEBIAN_FRONTEND=noninteractive dpkg -i {}/falco*.deb"
+        elif linux_dist.name == "CentOS" or linux_dist.name == "RedHat":
+            install_cmd = "rpm -i {}/falco*.rpm"
+        else:
+            self.fail("Unknown Linux Distribution {}".format(linux_dist))
+
+        self.install_proc = process.SubProcess(cmd)
+
+        res = self.falco_proc.run(timeout=180, sig=9)
 
     def check_rules_warnings(self, res):
 
