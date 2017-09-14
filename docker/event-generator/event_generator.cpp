@@ -397,15 +397,24 @@ void create_symlinks(const char *program)
 	}
 }
 
-void run_actions(map<string, action_t> &actions, int interval, bool once)
+void run_actions(map<string, action_t> &actions, int interval, bool once, bool before)
 {
 	while (true)
 	{
 		for (auto action : actions)
 		{
-			printf("***Action %s\n", action.first.c_str());
-			action.second();
-			sleep(interval);
+			if (before)
+			{
+				sleep(interval);
+				printf("***Action %s\n", action.first.c_str());
+				action.second();
+			}
+			else
+			{
+				printf("***Action %s\n", action.first.c_str());
+				action.second();
+				sleep(interval);
+			}
 		}
 		if(once)
 		{
@@ -421,6 +430,7 @@ int main(int argc, char **argv)
 	int long_index = 0;
 	int interval = 1;
 	bool once = false;
+	bool before = false;
 	map<string, action_t>::iterator it;
 
 	static struct option long_options[] =
@@ -429,6 +439,7 @@ int main(int argc, char **argv)
 		{"action", required_argument, 0, 'a' },
 		{"interval", required_argument, 0, 'i' },
 		{"once", no_argument, 0, 'o' },
+		{"before", no_argument, 0, 'b' },
 
 		{0, 0}
 	};
@@ -437,7 +448,7 @@ int main(int argc, char **argv)
 	// Parse the args
 	//
 	while((op = getopt_long(argc, argv,
-				"ha:i:l:o",
+				"ha:i:l:ob",
 				long_options, &long_index)) != -1)
 	{
 		switch(op)
@@ -462,6 +473,9 @@ int main(int argc, char **argv)
 			break;
 		case 'o':
 			once = true;
+			break;
+		case 'b':
+			before = true;
 			break;
 		default:
 			usage(argv[0]);
@@ -506,11 +520,11 @@ int main(int argc, char **argv)
 
 	setvbuf(stdout, NULL, _IONBF, 0);
 	setvbuf(stderr, NULL, _IONBF, 0);
-	// Only create symlinks when running as the program event_generator
-	if (strstr(argv[0], "generator"))
+	// Only create symlinks when running as the program event_generator or ftest
+	if (strstr(argv[0], "generator") || strstr(argv[0], "ftest"))
 	{
 		create_symlinks(argv[0]);
 	}
 
-	run_actions(actions, interval, once);
+	run_actions(actions, interval, once, before);
 }
