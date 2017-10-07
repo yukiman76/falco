@@ -484,7 +484,7 @@ blockquote. pre, code {
 }
 
 .header .header-logo, .header .header-logo img {
-    height: 4em;
+    height: 3em;
     max-height: 100%;
     display:block;
     float:left
@@ -788,15 +788,15 @@ blockquote. pre, code {
  */
 
 #page-home #section-banner .hero-img {
-    height: 11em;
+    height: 6em;
 }
 
 #page-home #section-banner .hero-title {
-    margin-top: -.5em;
+    margin-top: .5em;
 }
 
 #page-home #section-banner {
-    padding-bottom: 1em;
+    padding-bottom: 0em;
 }
 
 #page-home #section-banner .video-box {
